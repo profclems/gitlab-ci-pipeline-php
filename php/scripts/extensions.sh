@@ -1,34 +1,36 @@
 #!/usr/bin/env bash
 
-set -euf -o pipefail
+set -euo pipefail
 
-extensions=" \
-bcmath \
-bz2 \
-calendar \
-exif \
-gmp \
-intl \
-mysqli \
-opcache \
-pcntl \
-pdo_mysql \
-pdo_pgsql \
-pgsql \
-soap \
-xmlrpc \
-xsl \
-zip
-"
+export extensions=" \
+  bcmath \
+  bz2 \
+  calendar \
+  exif \
+  gmp \
+  intl \
+  mysqli \
+  opcache \
+  pcntl \
+  pdo_mysql \
+  pdo_pgsql \
+  pgsql \
+  soap \
+  xmlrpc \
+  xsl \
+  zip
+  "
 
 if [[ $PHP_VERSION == "7.4" || $PHP_VERSION == "7.3" || $PHP_VERSION == "7.2" ]]; then
-  buildDeps=" \
+
+export buildDeps=" \
     default-libmysqlclient-dev \
     libbz2-dev \
     libsasl2-dev \
     pkg-config \
-    " \
-  runtimeDeps=" \
+    "
+
+export runtimeDeps=" \
     imagemagick \
     libfreetype6-dev \
     libgmp-dev \
@@ -44,18 +46,21 @@ if [[ $PHP_VERSION == "7.4" || $PHP_VERSION == "7.3" || $PHP_VERSION == "7.2" ]]
     librabbitmq-dev \
     libssl-dev \
     libuv1-dev \
+    libwebp-dev \
     libxml2-dev \
-    libzip-dev \
     libxslt1-dev \
+    libzip-dev \
     multiarch-support \
     "
 else
-  buildDeps=" \
+
+export buildDeps=" \
     default-libmysqlclient-dev \
     libbz2-dev \
     libsasl2-dev \
-    " \
-  runtimeDeps=" \
+    "
+
+export runtimeDeps=" \
     imagemagick \
     libfreetype6-dev \
     libgmp-dev \
@@ -71,18 +76,21 @@ else
     libpq-dev \
     librabbitmq-dev \
     libuv1-dev \
+    libwebp-dev \
     libxml2-dev \
     mcrypt \
     multiarch-support \
     "
 fi
 
+apt-get update \
+  && apt-get install -yq $buildDeps \
+  && apt-get install -yq $runtimeDeps \
+  && rm -rf /var/lib/apt/lists/* \
+  && docker-php-ext-install -j$(nproc) $extensions
+
 if [[ $PHP_VERSION == "7.4" ]]; then
-  DEBIAN_FRONTEND=noninteractive apt-get install -yqq $buildDeps \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -yqq $runtimeDeps \
-    && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-install -j$(nproc) $extensions \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
     && docker-php-ext-install -j$(nproc) ldap \
@@ -90,11 +98,7 @@ if [[ $PHP_VERSION == "7.4" ]]; then
     && docker-php-ext-install -j$(nproc) imap \
     && docker-php-source delete
 else
-  DEBIAN_FRONTEND=noninteractive apt-get install -yqq $buildDeps \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -yqq $runtimeDeps \
-    && rm -rf /var/lib/apt/lists/* \
-    && docker-php-ext-install -j$(nproc) $extensions \
-    && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ --with-webp-dir=/usr/include/ \
     && docker-php-ext-install -j$(nproc) gd \
     && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ \
     && docker-php-ext-install -j$(nproc) ldap \
